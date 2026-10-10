@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor's House - Healthcare Appointment & Teleconsultation Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        },
+                        secondary: {
+                            500: '#0284c7',
+                            600: '#02699c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-40 border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Left: Menu & Brand Logo -->
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleMenuDrawer()" class="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition focus:outline-none" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+                <a href="#" onclick="switchTab('home')" class="flex items-center space-x-2">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-secondary-500 flex items-center justify-center text-white shadow-md">
+                        <i class="fa-solid fa-house-chimney-medical text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold bg-gradient-to-r from-brand-600 to-secondary-500 bg-clip-text text-transparent">Doctor's House</span>
+                        <span class="block text-[10px] text-gray-400 font-medium tracking-wider uppercase">Telehealth Portal</span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Center: Emergency Warning -->
+            <div class="hidden md:flex items-center space-x-2 bg-red-50 text-red-700 px-3 py-1.5 rounded-full text-xs font-medium border border-red-100">
+                <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
+                <span>Emergency? Call 112 or visit nearest hospital.</span>
+            </div>
+
+            <!-- Right: Language & Auth -->
+            <div class="flex items-center space-x-3">
+                <select id="langSwitcher" onchange="changeLanguage(this.value)" class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-gray-50 font-medium focus:ring-2 focus:ring-brand-500">
+                    <option value="en">English</option>
+                    <option value="hi">हिंदी (Hindi)</option>
+                </select>
+
+                <div id="authNavArea" class="flex items-center space-x-2">
+                    <button onclick="openAuthModal('login')" class="px-3.5 py-1.5 text-sm font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition">Login</button>
+                    <button onclick="openAuthModal('register')" class="hidden sm:inline-flex px-3.5 py-1.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm transition">Register</button>
+                </div>
+
+                <div id="userProfileBadge" class="hidden relative">
+                    <button onclick="toggleUserDropdown()" class="flex items-center space-x-2 p-1.5 rounded-xl hover:bg-gray-100 transition">
+                        <div id="userAvatarText" class="w-9 h-9 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center text-sm shadow">U</div>
+                        <span id="userNameDisplay" class="text-sm font-medium hidden sm:inline">User</span>
+                        <i class="fa-solid fa-chevron-down text-xs text-gray-500"></i>
+                    </button>
+                    <div id="userDropdownMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+                        <div class="px-4 py-2 border-b border-gray-100">
+                            <p class="text-xs text-gray-500">Signed in as</p>
+                            <p id="userDropdownEmail" class="text-sm font-bold text-gray-800 truncate">user@example.com</p>
+                        </div>
+                        <a href="#" onclick="switchTab('dashboard'); closeUserDropdown();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"><i class="fa-solid fa-gauge-high mr-2 text-brand-600"></i> My Dashboard</a>
+                        <a href="#" onclick="switchTab('support'); closeUserDropdown();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"><i class="fa-solid fa-headset mr-2 text-secondary-500"></i> Support & FAQ</a>
+                        <div class="border-t border-gray-100 my-1"></div>
+                        <button onclick="logoutUser()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"><i class="fa-solid fa-right-from-bracket mr-2"></i> Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Side Drawer Navigation -->
+    <div id="menuDrawer" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="toggleMenuDrawer()"></div>
+        <div class="absolute top-0 left-0 bottom-0 w-80 bg-white shadow-2xl flex flex-col transition-transform duration-300">
+            <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-brand-600 to-secondary-500 text-white">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-house-chimney-medical text-xl"></i>
+                    <span class="font-bold text-lg">Doctor's House Menu</span>
+                </div>
+                <button onclick="toggleMenuDrawer()" class="p-2 rounded-lg hover:bg-white/10 text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-1">
+                <a href="#" onclick="switchTab('home'); toggleMenuDrawer();" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-brand-50 text-gray-700 font-medium transition"><i class="fa-solid fa-house w-6 text-brand-600"></i> <span data-i18n="nav_home">Home</span></a>
+                <a href="#" onclick="switchTab('online'); toggleMenuDrawer();" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-brand-50 text-gray-700 font-medium transition"><i class="fa-solid fa-video w-6 text-secondary-500"></i> <span data-i18n="nav_online">Online Doctors</span></a>
+                <a href="#" onclick="switchTab('offline'); toggleMenuDrawer();" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-brand-50 text-gray-700 font-medium transition"><i class="fa-solid fa-hospital w-6 text-emerald-600"></i> <span data-i18n="nav_offline">Offline Clinic</span></a>
+                <a href="#" onclick="switchTab('homevisit'); toggleMenuDrawer();" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-brand-50 text-gray-700 font-medium transition"><i class="fa-solid fa-user-doctor w-6 text-amber-600"></i> <span data-i18n="nav_homevisit">Home Visit</span></a>
+                <div class="border-t border-gray-100 my-2"></div>
+                <a href="#" onclick="switchTab('support'); toggleMenuDrawer();" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 text-gray-700 font-medium transition"><i class="fa-solid fa-circle-question w-6 text-gray-500"></i> <span data-i18n="nav_support">Support</span></a>
+                <a href="#" onclick="switchTab('guidelines'); toggleMenuDrawer();" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 text-gray-700 font-medium transition"><i class="fa-solid fa-book-open w-6 text-gray-500"></i> <span data-i18n="nav_guidelines">Guidelines</span></a>
+                <a href="#" onclick="switchTab('admin'); toggleMenuDrawer();" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 text-gray-700 font-medium transition"><i class="fa-solid fa-shield-halved w-6 text-indigo-600"></i> <span data-i18n="nav_admin">Admin Panel</span></a>
+            </div>
+            <div class="p-4 border-t border-gray-100 bg-gray-50 text-xs text-center text-gray-500">
+                Doctor's House v2.5 &bull; GitHub Pages Ready
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1">
+
+        <!-- HOME TAB -->
+        <section id="tab-home" class="space-y-8 pb-16">
+            <div class="bg-gradient-to-r from-brand-700 via-brand-600 to-secondary-600 text-white py-14 px-4 sm:px-6 lg:px-8">
+                <div class="max-w-5xl mx-auto text-center space-y-4">
+                    <span class="bg-white/20 text-white text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full backdrop-blur-md">Verified Telehealth Platform</span>
+                    <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight">Find & Book Verified Doctors Instantly</h1>
+                    <p class="text-brand-100 text-base sm:text-lg max-w-2xl mx-auto">Offline clinic OPD visits, live video consultations, and doorstep home visits.</p>
+                    
+                    <!-- Search Widget -->
+                    <div class="bg-white p-3 rounded-2xl shadow-2xl max-w-3xl mx-auto mt-6 flex flex-col md:flex-row gap-2 text-gray-800">
+                        <div class="flex-1 flex items-center px-3 py-2 bg-gray-50 rounded-xl border border-gray-200">
+                            <i class="fa-solid fa-location-dot text-brand-600 mr-2"></i>
+                            <input type="text" id="globalSearchLocation" placeholder="City or Locality (e.g. Delhi, Mumbai)" class="w-full bg-transparent text-sm focus:outline-none">
+                        </div>
+                        <div class="flex-1 flex items-center px-3 py-2 bg-gray-50 rounded-xl border border-gray-200">
+                            <i class="fa-solid fa-stethoscope text-secondary-500 mr-2"></i>
+                            <select id="globalSearchSpecialty" class="w-full bg-transparent text-sm focus:outline-none cursor-pointer">
+                                <option value="">All Specialties</option>
+                                <option value="General Physician">General Physician</option>
+                                <option value="Dentist">Dentist</option>
+                                <option value="Cardiologist">Cardiologist</option>
+                                <option value="Dermatologist">Dermatologist</option>
+                                <option value="Orthopedic">Orthopedic Doctor</option>
+                                <option value="Pediatrician">Pediatrician</option>
+                                <option value="Gynecologist">Gynecologist</option>
+                            </select>
+                        </div>
+                        <button onclick="filterDoctors()" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-3 rounded-xl shadow transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <span>Search</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Service Cards -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div onclick="switchTab('offline')" class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 hover:border-brand-500 hover:shadow-xl transition cursor-pointer flex items-center space-x-4">
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl flex-shrink-0"><i class="fa-solid fa-hospital"></i></div>
+                        <div>
+                            <h3 class="font-bold text-lg text-gray-900">Offline Clinic OPD</h3>
+                            <p class="text-xs text-gray-500 mt-0.5">Book physical clinic appointments.</p>
+                        </div>
+                    </div>
+                    <div onclick="switchTab('online')" class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 hover:border-secondary-500 hover:shadow-xl transition cursor-pointer flex items-center space-x-4">
+                        <div class="w-14 h-14 rounded-2xl bg-sky-100 text-secondary-500 flex items-center justify-center text-2xl flex-shrink-0"><i class="fa-solid fa-video"></i></div>
+                        <div>
+                            <h3 class="font-bold text-lg text-gray-900">Online Consultation</h3>
+                            <p class="text-xs text-gray-500 mt-0.5">Instant video, audio & chat.</p>
+                        </div>
+                    </div>
+                    <div onclick="switchTab('homevisit')" class="bg-white p-6 rounded-2xl shadow-md border border-gray-100 hover:border-amber-500 hover:shadow-xl transition cursor-pointer flex items-center space-x-4">
+                        <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl flex-shrink-0"><i class="fa-solid fa-user-doctor"></i></div>
+                        <div>
+                            <h3 class="font-bold text-lg text-gray-900">Home Visit Doctors</h3>
+                            <p class="text-xs text-gray-500 mt-0.5">Doctors visit your home.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Doctor Listings Grid -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-200 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">Available Verified Doctors</h2>
+                        <p class="text-xs text-gray-500">Board-certified medical practitioners ready to assist.</p>
+                    </div>
+                    <div class="flex items-center space-x-2 overflow-x-auto pb-2 sm:pb-0">
+                        <button onclick="setCategoryFilter('all')" class="category-btn px-4 py-2 text-xs font-bold rounded-lg bg-brand-600 text-white shadow-sm transition">All</button>
+                        <button onclick="setCategoryFilter('Offline')" class="category-btn px-4 py-2 text-xs font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">Offline Clinic</button>
+                        <button onclick="setCategoryFilter('Online')" class="category-btn px-4 py-2 text-xs font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">Online Video</button>
+                        <button onclick="setCategoryFilter('Home Visit')" class="category-btn px-4 py-2 text-xs font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">Home Visit</button>
+                    </div>
+                </div>
+                <div id="doctorsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"></div>
+            </div>
+        </section>
+
+        <!-- ONLINE SECTION -->
+        <section id="tab-online" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden space-y-6">
+            <div class="bg-sky-50 border border-sky-100 p-6 rounded-2xl flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold text-secondary-600 uppercase tracking-widest bg-sky-100 px-3 py-1 rounded-full">Telemedicine Portal</span>
+                    <h2 class="text-2xl font-bold text-gray-900 mt-2">Online Doctor Consultation</h2>
+                    <p class="text-sm text-gray-600">HD Video Call & Secure Chat with verified medical experts.</p>
+                </div>
+            </div>
+            <div id="onlineDoctorsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- OFFLINE SECTION -->
+        <section id="tab-offline" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden space-y-6">
+            <div class="bg-emerald-50 border border-emerald-100 p-6 rounded-2xl flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold text-emerald-700 uppercase tracking-widest bg-emerald-100 px-3 py-1 rounded-full">OPD & Clinic Visits</span>
+                    <h2 class="text-2xl font-bold text-gray-900 mt-2">Offline Clinic Consultation</h2>
+                    <p class="text-sm text-gray-600">Timed appointments at physical clinics near you.</p>
+                </div>
+            </div>
+            <div id="offlineDoctorsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- HOME VISIT SECTION -->
+        <section id="tab-homevisit" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden space-y-6">
+            <div class="bg-amber-50 border border-amber-100 p-6 rounded-2xl flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold text-amber-700 uppercase tracking-widest bg-amber-100 px-3 py-1 rounded-full">Doorstep Care</span>
+                    <h2 class="text-2xl font-bold text-gray-900 mt-2">Home Visit Doctor Consultation</h2>
+                    <p class="text-sm text-gray-600">Request physicians for comfortable home checkups.</p>
+                </div>
+            </div>
+            <div id="homevisitDoctorsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- SUPPORT TAB -->
+        <section id="tab-support" class="max-w-4xl mx-auto px-4 py-12 hidden space-y-8">
+            <div class="text-center space-y-2">
+                <h2 class="text-3xl font-bold text-gray-900">Support & Help Center</h2>
+                <p class="text-sm text-gray-500">Available 24/7 for appointments and queries.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-3">
+                    <div class="w-12 h-12 bg-brand-50 text-brand-600 rounded-xl flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-phone-volume"></i></div>
+                    <h3 class="font-bold text-lg">Helpline Number</h3>
+                    <p class="text-base font-bold text-brand-600">+91 1800-DOC-HOUSE</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-3">
+                    <div class="w-12 h-12 bg-secondary-50 text-secondary-500 rounded-xl flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-envelope"></i></div>
+                    <h3 class="font-bold text-lg">Email Support</h3>
+                    <p class="text-base font-bold text-secondary-600">support@doctorshouse.in</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- GUIDELINES TAB -->
+        <section id="tab-guidelines" class="max-w-4xl mx-auto px-4 py-12 hidden space-y-8">
+            <div class="text-center space-y-2">
+                <h2 class="text-3xl font-bold text-gray-900">Platform Guidelines / दिशा-निर्देश</h2>
+            </div>
+            <div class="space-y-6 text-sm leading-relaxed text-gray-700">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-2">
+                    <h3 class="font-bold text-lg text-brand-700"><i class="fa-solid fa-circle-check mr-2"></i> How to Book / अपॉइंटमेंट कैसे बुक करें</h3>
+                    <p><strong>English:</strong> Search doctor, select slot, verify with OTP and complete payment.</p>
+                    <p class="text-gray-500"><strong>हिंदी:</strong> डॉक्टर खोजें, समय चुनें, ओटीपी वेरिफाई करें और बुकिंग कंफर्म करें।</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADMIN TAB -->
+        <section id="tab-admin" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden space-y-6">
+            <div class="bg-indigo-900 text-white p-6 rounded-2xl flex items-center justify-between shadow-lg">
+                <div>
+                    <span class="text-xs font-bold text-indigo-200 uppercase tracking-widest bg-indigo-800 px-3 py-1 rounded-full">Admin Panel</span>
+                    <h2 class="text-2xl font-bold mt-2">Platform Administration</h2>
+                </div>
+                <button onclick="logoutUser()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-xl">Exit Admin</button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+                <h3 class="font-bold text-lg text-gray-900">Doctor Credential Verification Queue</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
+                            <tr><th class="p-3">Doctor Name</th><th class="p-3">Specialty</th><th class="p-3">Status</th><th class="p-3">Actions</th></tr>
+                        </thead>
+                        <tbody id="adminDoctorTableBody" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- DASHBOARD TAB -->
+        <section id="tab-dashboard" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div id="dashAvatar" class="w-16 h-16 rounded-2xl bg-brand-600 text-white font-extrabold text-2xl flex items-center justify-center shadow">P</div>
+                    <div>
+                        <h2 id="dashName" class="text-2xl font-bold text-gray-900">Patient Dashboard</h2>
+                        <p id="dashRoleEmail" class="text-xs text-gray-500">patient@example.com</p>
+                    </div>
+                </div>
+                <button onclick="openMedicalWallet()" class="px-4 py-2 bg-secondary-50 hover:bg-secondary-100 text-secondary-600 font-bold text-xs rounded-xl transition">
+                    <i class="fa-solid fa-file-medical mr-1"></i> Medical Wallet
+                </button>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                <h3 class="font-bold text-lg text-gray-900">My Appointments</h3>
+                <div id="myAppointmentsList" class="space-y-3"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-900 text-white mt-16 pt-12 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-gray-500">
+            <p>&copy; 2026 Doctor's House Platform. Hosted via GitHub Pages.</p>
+        </div>
+    </footer>
+
+    <!-- MODALS -->
+    <div id="authModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeAuthModal()"></div>
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 relative z-10 space-y-6">
+            <div class="flex items-center justify-between">
+                <h3 class="text-2xl font-bold text-gray-900">Login / Register</h3>
+                <button onclick="closeAuthModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="authInputId" placeholder="Mobile Number or Email" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                <input type="password" id="authInputPass" placeholder="Password or OTP" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                <button onclick="handleUserLogin()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl shadow transition">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOOKING MODAL -->
+    <div id="bookingModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeBookingModal()"></div>
+        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8 relative z-10 space-y-6">
+            <div class="flex items-center justify-between border-b pb-4">
+                <div>
+                    <span id="modalDocMode" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-brand-100 text-brand-700">Online</span>
+                    <h3 id="modalDocName" class="text-xl font-bold text-gray-900 mt-1">Doctor Name</h3>
+                </div>
+                <button onclick="closeBookingModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div class="bg-gray-50 p-4 rounded-xl flex items-center justify-between text-sm">
+                    <div>
+                        <p class="text-xs text-gray-500">Consultation Fee</p>
+                        <p id="modalDocFee" class="text-lg font-extrabold text-brand-600">₹500</p>
+                    </div>
+                </div>
+                <input type="date" id="bookingDateInput" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                <input type="text" id="bookingPatientName" placeholder="Patient Full Name" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                <input type="text" id="bookingPatientPhone" placeholder="Mobile Number" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                <button onclick="confirmAndPayBooking()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition">Confirm & Pay</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIDEO CALL MODAL -->
+    <div id="videoCallModal" class="fixed inset-0 z-50 hidden bg-gray-900 flex flex-col items-center justify-between p-6 text-white">
+        <div class="w-full max-w-4xl flex items-center justify-between border-b border-gray-800 pb-4">
+            <span id="callDoctorTitle" class="font-bold text-lg">Live Teleconsultation</span>
+            <button onclick="endVideoCall()" class="px-6 py-2 rounded-full bg-red-600 hover:bg-red-700 font-bold text-sm">End Call</button>
+        </div>
+        <div class="flex-1 w-full max-w-4xl flex items-center justify-center my-4">
+            <div class="w-full h-96 bg-gray-800 rounded-2xl flex flex-col items-center justify-center border border-gray-700">
+                <i class="fa-solid fa-user-doctor text-6xl text-gray-600 mb-3"></i>
+                <p class="text-gray-400 text-sm">Secure Video Call in Progress...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MEDICAL WALLET MODAL -->
+    <div id="medicalWalletModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeMedicalWallet()"></div>
+        <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-8 relative z-10 space-y-6">
+            <div class="flex items-center justify-between border-b pb-4">
+                <h3 class="text-xl font-bold text-gray-900">Medical Wallet</h3>
+                <button onclick="closeMedicalWallet()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <input type="file" id="reportFileInput" class="hidden" onchange="handleReportUpload(event)">
+            <button onclick="document.getElementById('reportFileInput').click()" class="w-full py-3 bg-brand-50 text-brand-600 font-bold text-xs rounded-xl hover:bg-brand-100 transition">+ Upload Report</button>
+            <div id="walletFilesList" class="space-y-2 max-h-48 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script>
+        const doctorsData = [
+            { id: 1, name: "Dr. Rajesh Sharma", specialty: "General Physician", qual: "MBBS, MD", exp: "12 Years", loc: "Connaught Place, New Delhi", fee: 500, type: "Online", opd: "Mon-Sat: 09 AM - 05 PM", status: "Verified", img: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=300&q=80" },
+            { id: 2, name: "Dr. Priya Nair", specialty: "Dermatologist", qual: "MBBS, DDVL", exp: "9 Years", loc: "Bandra West, Mumbai", fee: 800, type: "Offline", opd: "Mon-Fri: 10 AM - 07 PM", status: "Verified", img: "https://images.unsplash.com/photo-1594824813578-8344a867b9ae?auto=format&fit=crop&w=300&q=80" },
+            { id: 3, name: "Dr. Amit Verma", specialty: "Cardiologist", qual: "MBBS, DM", exp: "15 Years", loc: "Sector 18, Noida", fee: 1200, type: "Online", opd: "Mon-Sat: 11 AM - 04 PM", status: "Verified", img: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=300&q=80" },
+            { id: 4, name: "Dr. Sunita Rao", specialty: "Gynecologist", qual: "MBBS, MS", exp: "11 Years", loc: "Koramangala, Bengaluru", fee: 900, type: "Home Visit", opd: "Tue-Sun: 09 AM - 02 PM", status: "Verified", img: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=300&q=80" }
+        ];
+
+        let currentUser = null;
+        let selectedDoctorForBooking = null;
+        let userAppointments = [];
+        let userReports = [];
+
+        function switchTab(tabId) {
+            ['home', 'online', 'offline', 'homevisit', 'support', 'guidelines', 'admin', 'dashboard'].forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hidden');
+            });
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if(tabId === 'admin') renderAdminTable();
+            if(tabId === 'dashboard') renderDashboardAppointments();
+        }
+
+        function toggleMenuDrawer() {
+            document.getElementById('menuDrawer').classList.toggle('hidden');
+        }
+
+        function renderDoctors(filterType = 'all', searchLoc = '', searchSpec = '') {
+            let filtered = doctorsData.filter(d => {
+                let matchType = (filterType === 'all' || d.type === filterType);
+                let matchLoc = searchLoc === '' || d.loc.toLowerCase().includes(searchLoc.toLowerCase()) || d.name.toLowerCase().includes(searchLoc.toLowerCase());
+                let matchSpec = searchSpec === '' || d.specialty === searchSpec;
+                return matchType && matchLoc && matchSpec;
+            });
+
+            const cardsHTML = items => items.length === 0 ? `<div class="col-span-full py-12 text-center text-gray-400">No doctors found.</div>` : items.map(d => `
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition flex flex-col justify-between overflow-hidden">
+                    <div class="p-5 space-y-4">
+                        <div class="flex items-start space-x-4">
+                            <img src="${d.img}" class="w-16 h-16 rounded-2xl object-cover shadow-md flex-shrink-0">
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="font-bold text-gray-900 text-base">${d.name}</h3>
+                                    <span class="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold">${d.status}</span>
+                                </div>
+                                <p class="text-xs font-semibold text-brand-600">${d.specialty}</p>
+                                <p class="text-[11px] text-gray-400 mt-0.5">${d.qual}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-4 border-t border-gray-100 flex items-center justify-between">
+                        <span class="text-base font-extrabold text-gray-900">₹${d.fee}</span>
+                        <button onclick="openBookingModal(${d.id})" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow transition">Book Appointment</button>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('doctorsGrid').innerHTML = cardsHTML(filtered);
+            document.getElementById('onlineDoctorsGrid').innerHTML = cardsHTML(doctorsData.filter(d => d.type === 'Online'));
+            document.getElementById('offlineDoctorsGrid').innerHTML = cardsHTML(doctorsData.filter(d => d.type === 'Offline'));
+            document.getElementById('homevisitDoctorsGrid').innerHTML = cardsHTML(doctorsData.filter(d => d.type === 'Home Visit'));
+        }
+
+        function setCategoryFilter(type) {
+            renderDoctors(type);
+        }
+
+        function filterDoctors() {
+            renderDoctors('all', document.getElementById('globalSearchLocation').value, document.getElementById('globalSearchSpecialty').value);
+        }
+
+        function openBookingModal(id) {
+            selectedDoctorForBooking = doctorsData.find(d => d.id === id);
+            document.getElementById('modalDocName').innerText = selectedDoctorForBooking.name;
+            document.getElementById('modalDocMode').innerText = selectedDoctorForBooking.type;
+            document.getElementById('modalDocFee').innerText = '₹' + selectedDoctorForBooking.fee;
+            document.getElementById('bookingModal').classList.remove('hidden');
+        }
+
+        function closeBookingModal() { document.getElementById('bookingModal').classList.add('hidden'); }
+
+        function confirmAndPayBooking() {
+            userAppointments.push({
+                id: 'DH-' + Math.floor(100000 + Math.random() * 900000),
+                doctorName: selectedDoctorForBooking.name,
+                type: selectedDoctorForBooking.type,
+                date: document.getElementById('bookingDateInput').value || 'Today',
+                fee: selectedDoctorForBooking.fee,
+                status: 'Confirmed'
+            });
+            closeBookingModal();
+            alert('Appointment Confirmed Successfully!');
+            if(selectedDoctorForBooking.type === 'Online') document.getElementById('videoCallModal').classList.remove('hidden');
+        }
+
+        function endVideoCall() { document.getElementById('videoCallModal').classList.add('hidden'); }
+        function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
+        function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
+
+        function handleUserLogin() {
+            currentUser = { name: 'Patient User', email: 'user@doctorshouse.in', role: 'patient' };
+            closeAuthModal();
+            switchTab('dashboard');
+        }
+
+        function logoutUser() {
+            currentUser = null;
+            switchTab('home');
+            alert('Logged out.');
+        }
+
+        function openMedicalWallet() { document.getElementById('medicalWalletModal').classList.remove('hidden'); }
+        function closeMedicalWallet() { document.getElementById('medicalWalletModal').classList.add('hidden'); }
+
+        function handleReportUpload(e) {
+            if(e.target.files[0]) {
+                userReports.push({ name: e.target.files[0].name });
+                alert('Report uploaded securely.');
+            }
+        }
+
+        function renderDashboardAppointments() {
+            const list = document.getElementById('myAppointmentsList');
+            list.innerHTML = userAppointments.length === 0 ? '<p class="text-xs text-gray-400">No bookings yet.</p>' : userAppointments.map(a => `
+                <div class="p-3 bg-gray-50 rounded-xl flex justify-between items-center text-xs">
+                    <div><b>${a.doctorName}</b> (${a.type}) - ${a.date}</div>
+                    <span class="text-emerald-600 font-bold">${a.status}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderAdminTable() {
+            document.getElementById('adminDoctorTableBody').innerHTML = doctorsData.map(d => `
+                <tr class="border-b border-gray-50"><td class="p-3">${d.name}</td><td class="p-3">${d.specialty}</td><td class="p-3 text-emerald-600 font-bold">${d.status}</td><td class="p-3"><button onclick="alert('Verified')" class="text-xs bg-brand-50 text-brand-600 px-3 py-1 rounded font-bold">Verify</button></td></tr>
+            `).join('');
+        }
+
+        window.onload = () => renderDoctors();
+    </script>
+</body>
+</html>
